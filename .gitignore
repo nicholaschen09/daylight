@@ -7,8 +7,14 @@
 *.pyc
 __pycache__
 db.sqlite3
+db.sqlite3-journal
 media
 mediafiles
+staticfiles/
+static_root/
+local_settings.py
+settings_local.py
+*.local
 
 # Backup files #
 
@@ -98,6 +104,13 @@ coverage.xml
 # pyenv
 .python-version
 
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+virtualenv/
+
 # celery
 celerybeat-schedule.*
 
@@ -136,6 +149,8 @@ yarn-error.log*
 # Miscellaneous #
 #################
 
+.claude
+
 # Sublime Text
 *.tmlanguage.cache
 *.tmPreferences.cache
@@ -171,8 +186,21 @@ celerybeat.pid
 # File uploads
 django/uploads/
 
+# Docker volumes and data
+postgres_data/
+redis_data/
+*.sql
+*.dump
+
 samples/
 celerybeat-schedule-shm
 celerybeat-schedule-wal
 
-.claude
+
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.*
+!.env.example
