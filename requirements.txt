@@ -1,0 +1,8 @@
+Django==5.2.10
+graphene-django==3.2.3
+psycopg==3.3.2
+psycopg-binary==3.3.2
+factory_boy==3.3.3
+celery[redis]==5.4.0
+django-celery-beat==2.8.1
+watchdog==6.0.0

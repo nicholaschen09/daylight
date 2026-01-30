@@ -1,0 +1,76 @@
+services:
+  django:
+    container_name: django
+    init: true
+    tty: true
+    stdin_open: true
+    image: local_django
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    command: docker/django/start
+    restart: "always"
+    env_file:
+      - .env
+    ports:
+      - 8000:8000
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+      - redis
+
+  celery_worker:
+    container_name: celery_worker
+    image: local_django
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    command: watchmedo auto-restart --directory=./ --pattern=*.py --recursive -- celery -A config worker -l info
+    restart: "always"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+      - redis
+
+  celery_beat:
+    container_name: celery_beat
+    image: local_django
+    build:
+      context: .
+      dockerfile: docker/django/Dockerfile
+    command: celery -A config beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    restart: "always"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+      - redis
+      - celery_worker
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: postgres
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - 6379:6379
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
