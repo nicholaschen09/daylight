@@ -96,3 +96,4 @@ make reset           # Wipe database and restart
 ## GraphQL Playground
 
 http://localhost:8000/graphql
+# daylight
