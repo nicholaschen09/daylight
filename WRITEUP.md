@@ -24,11 +24,11 @@ for the telemetry simulation, i used celery beat to run it every 60 seconds. thi
 
 i completed all three main objectives:
 
-**data models** - the device model handles all four device types using the sti pattern. each device type has its required properties validated, and i added computed properties like `current_power_watts` and `charge_percentage` that make the graphql queries clean.
+**data models** - the device model handles all four device types using the sti pattern. each device type has its required properties validated, and i added computed properties like `current_power_watts`, `charge_percentage`, and `is_storage_device` that make the graphql queries clean and reduce code duplication across the codebase.
 
 **graphql api** - i implemented the register device mutation, list devices query (with filtering), get single device, and the energy summary query. the energy summary was interesting because it needs to aggregate across all devices - i iterate through active devices, categorize power as production (positive) or consumption (negative), and extract storage states for batteries/evs.
 
-**telemetry simulation** - the celery task runs every minute and simulates each device type appropriately. solar panels use time-based calculations, appliances have realistic on/off patterns, and storage devices update charge levels based on their mode. the auto-idle logic was a nice touch - batteries/evs automatically switch to idle when they hit capacity limits.
+**telemetry simulation** - the celery task runs every minute and simulates each device type appropriately. solar panels use time-based calculations, appliances have realistic on/off patterns, and storage devices update charge levels based on their mode. the auto-idle logic was a nice touch - batteries/evs automatically switch to idle when they hit capacity limits. i optimized the task to use `bulk_update()` instead of individual saves, which is more efficient at scale.
 
 one thing i partially implemented is the time-range telemetry queries. the backend method `TelemetryService.get_telemetry_aggregated()` exists and supports hour/day/week/month intervals using django's truncation functions, but i didn't expose it via graphql yet. it's ready to go though - just needs a query field added to the schema.
 
@@ -61,7 +61,7 @@ when scaling, the main challenges are:
 
 **database** - i'd use postgresql hash partitioning on `device_id` (4-16 partitions) with composite `(device_id, timestamp)` indexes and brin indexes on timestamp. timescaledb would handle automatic time-based partitioning, compression (80-90% reduction), and continuous aggregates, with 2-3 read replicas for analytics queries.
 
-**application** - redis caching for device states (60s ttl) and energy summaries (30s ttl), with kafka message queue where celery publishes telemetry events and workers consume in batches of 1000 for bulk inserts. horizontal scaling with 10-20 django servers behind a load balancer and 50-100 celery workers in separate pools.
+**application** - redis caching for device states (60s ttl) and energy summaries (30s ttl), with kafka message queue where celery publishes telemetry events and workers consume in batches of 1000 for bulk inserts. the current implementation already uses `bulk_update()` with a batch size of 1000 to minimize database round trips. horizontal scaling with 10-20 django servers behind a load balancer and 50-100 celery workers in separate pools.
 
 **data retention** - tiered storage: hot data (0-30 days) in postgresql, warm (30-365 days) compressed in timescaledb, cold (1+ years) in s3. downsampling: keep raw data 7 days, aggregate to hourly for 90 days, daily for 2 years, monthly forever, reducing storage from terabytes to gigabytes.
 
