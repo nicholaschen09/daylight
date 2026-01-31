@@ -146,11 +146,16 @@ class Device(BaseModel):
         return f"{self.name} ({self.get_device_type_display()})"
 
     @property
+    def is_storage_device(self) -> bool:
+        """Returns True if device is a storage device (Battery or EV)."""
+        return self.device_type in [DeviceType.BATTERY, DeviceType.ELECTRIC_VEHICLE]
+
+    @property
     def is_producer(self) -> bool:
         """Returns True if device is currently producing energy."""
         if self.device_type == DeviceType.SOLAR_PANEL:
             return self.current_state.get('current_output_watts', 0) > 0
-        if self.device_type in [DeviceType.BATTERY, DeviceType.ELECTRIC_VEHICLE]:
+        if self.is_storage_device:
             return self.current_state.get('mode') == DeviceMode.DISCHARGING
         return False
 
@@ -159,7 +164,7 @@ class Device(BaseModel):
         """Returns True if device is currently consuming energy."""
         if self.device_type == DeviceType.APPLIANCE:
             return self.current_state.get('is_on', False)
-        if self.device_type in [DeviceType.BATTERY, DeviceType.ELECTRIC_VEHICLE]:
+        if self.is_storage_device:
             return self.current_state.get('mode') == DeviceMode.CHARGING
         return False
 
@@ -177,7 +182,7 @@ class Device(BaseModel):
                 return -self.current_state.get('current_power_draw_watts', 0)
             return 0
 
-        if self.device_type in [DeviceType.BATTERY, DeviceType.ELECTRIC_VEHICLE]:
+        if self.is_storage_device:
             mode = self.current_state.get('mode', DeviceMode.IDLE)
             rate = self.current_state.get('current_rate_watts', 0)
             if mode == DeviceMode.DISCHARGING:
@@ -189,7 +194,7 @@ class Device(BaseModel):
     @property
     def charge_percentage(self) -> float | None:
         """Returns charge percentage for storage devices, None for others."""
-        if self.device_type not in [DeviceType.BATTERY, DeviceType.ELECTRIC_VEHICLE]:
+        if not self.is_storage_device:
             return None
 
         if self.device_type == DeviceType.BATTERY:
@@ -206,11 +211,11 @@ class Device(BaseModel):
     @property
     def capacity_wh(self) -> float | None:
         """Returns capacity in Wh for storage devices, None for others."""
+        if not self.is_storage_device:
+            return None
         if self.device_type == DeviceType.BATTERY:
             return self.properties.get('capacity_wh')
-        elif self.device_type == DeviceType.ELECTRIC_VEHICLE:
-            return self.properties.get('battery_capacity_wh')
-        return None
+        return self.properties.get('battery_capacity_wh')
 
 
 class TelemetryReading(BaseModel):

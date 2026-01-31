@@ -17,19 +17,20 @@ def simulate_telemetry():
     from core.services import TelemetryService
 
     timestamp = timezone.now()
-    devices = Device.objects.filter(is_active=True)
-    count = 0
+    devices = list(Device.objects.filter(is_active=True))
 
     for device in devices:
         new_state = TelemetryService.simulate_device(device, timestamp)
-
         device.current_state.update(new_state)
-        device.save(update_fields=['current_state', 'updated_at'])
 
+    # Bulk update for better performance at scale
+    Device.objects.bulk_update(devices, ['current_state', 'updated_at'], batch_size=1000)
+
+    # Record telemetry readings
+    for device in devices:
         TelemetryService.record_telemetry(device, timestamp)
-        count += 1
 
-    return f"Simulated telemetry for {count} devices at {timestamp.isoformat()}"
+    return f"Simulated telemetry for {len(devices)} devices at {timestamp.isoformat()}"
 
 
 @shared_task

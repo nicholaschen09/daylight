@@ -195,7 +195,8 @@ class SetStorageMode(graphene.Mutation):
     def mutate(self, info, device_id, mode, rate_watts=None):
         try:
             device = Device.objects.get(id=device_id)
-            device = DeviceService.set_storage_mode(device, mode, rate_watts)
+            mode_str = mode if isinstance(mode, str) else mode.value
+            device = DeviceService.set_storage_mode(device, mode_str, rate_watts)
             return SetStorageMode(device=device, success=True, errors=[])
         except Device.DoesNotExist:
             return SetStorageMode(

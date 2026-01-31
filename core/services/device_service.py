@@ -167,7 +167,7 @@ class DeviceService:
         Raises:
             DeviceValidationError: If device is not a storage device or mode is invalid
         """
-        if device.device_type not in [DeviceType.BATTERY, DeviceType.ELECTRIC_VEHICLE]:
+        if not device.is_storage_device:
             raise DeviceValidationError("Only storage devices have operating modes")
 
         # Validate mode is a valid DeviceMode choice

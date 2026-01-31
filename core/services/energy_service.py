@@ -48,7 +48,7 @@ class EnergyService:
             elif power < 0:
                 total_consumption += abs(power)
 
-            if device.device_type in [DeviceType.BATTERY, DeviceType.ELECTRIC_VEHICLE]:
+            if device.is_storage_device:
                 capacity = device.capacity_wh or 0
                 current_charge = device.current_state.get('current_charge_wh', 0)
 

@@ -140,7 +140,7 @@ class TelemetryService:
             is_on, power_draw = cls.simulate_appliance(device)
             return {'is_on': is_on, 'current_power_draw_watts': power_draw}
 
-        if device.device_type in [DeviceType.BATTERY, DeviceType.ELECTRIC_VEHICLE]:
+        if device.is_storage_device:
             new_charge = cls.update_storage_charge(device)
             new_state = {
                 **device.current_state,
@@ -164,7 +164,7 @@ class TelemetryService:
         power = device.current_power_watts
         charge = None
 
-        if device.device_type in [DeviceType.BATTERY, DeviceType.ELECTRIC_VEHICLE]:
+        if device.is_storage_device:
             charge = device.current_state.get('current_charge_wh')
 
         reading, _ = TelemetryReading.objects.update_or_create(
