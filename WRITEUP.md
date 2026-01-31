@@ -69,26 +69,9 @@ when scaling, the main challenges are:
 
 the django orm made the queries clean, and postgresql's jsonfield handled the flexible device properties nicely. celery was straightforward to set up - just configure the beat schedule and the tasks run automatically.
 
-here are some example graphql queries that demonstrate the api:
+here's an example graphql query and response:
 
-**list all devices:**
-```graphql
-query {
-  devices {
-    id
-    name
-    deviceType
-    currentPowerWatts
-    chargePercentage
-    isProducing
-    isConsuming
-    properties
-    currentState
-  }
-}
-```
-
-**energy summary:**
+**query:**
 ```graphql
 query {
   energySummary {
@@ -107,26 +90,32 @@ query {
 }
 ```
 
-**register a device:**
-```graphql
-mutation {
-  registerDevice(input: {
-    name: "Backyard Solar Array"
-    deviceType: SOLAR_PANEL
-    properties: {
-      solarPanel: {
-        ratedCapacityWatts: 4000
-      }
-    }
-  }) {
-    success
-    errors
-    device {
-      id
-      name
-      deviceType
-      properties
-      currentState
+**response:**
+```json
+{
+  "data": {
+    "energySummary": {
+      "totalProductionWatts": 0,
+      "totalConsumptionWatts": 4873.69,
+      "netPowerWatts": -4873.69,
+      "storageStates": [
+        {
+          "deviceName": "Tesla Model 3",
+          "deviceType": "electric_vehicle",
+          "capacityWh": 75000,
+          "currentChargeWh": 60000,
+          "chargePercentage": 80,
+          "mode": "idle"
+        },
+        {
+          "deviceName": "Powerwall",
+          "deviceType": "battery",
+          "capacityWh": 13500,
+          "currentChargeWh": 6750,
+          "chargePercentage": 50,
+          "mode": "idle"
+        }
+      ]
     }
   }
 }
