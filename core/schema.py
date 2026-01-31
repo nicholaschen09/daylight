@@ -1,6 +1,6 @@
 import graphene
 from graphene_django import DjangoObjectType
-from core.models import Device, DeviceType, DeviceMode, TelemetryReading
+from core.models import Device, DeviceType, TelemetryReading
 from core.services import DeviceService, EnergyService, DeviceValidationError
 
 
@@ -135,6 +135,8 @@ class RegisterDevice(graphene.Mutation):
             # Convert enum to string for comparison
             device_type_str = device_type if isinstance(device_type, str) else device_type.value
 
+            # Extract properties based on device type
+            properties = None
             if device_type_str == DeviceType.SOLAR_PANEL and properties_input.solar_panel:
                 properties = {
                     'rated_capacity_watts': properties_input.solar_panel.rated_capacity_watts
@@ -155,7 +157,8 @@ class RegisterDevice(graphene.Mutation):
                 properties = {
                     'average_power_draw_watts': properties_input.appliance.average_power_draw_watts
                 }
-            else:
+
+            if not properties:
                 return RegisterDevice(
                     device=None,
                     success=False,

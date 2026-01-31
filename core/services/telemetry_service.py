@@ -12,10 +12,15 @@ class TelemetryService:
 
     SOLAR_PEAK_HOUR = 12
     SOLAR_CURVE_WIDTH = 4
+    SOLAR_VARIATION = 0.15  # ±15% random variation for weather
+    SOLAR_NIGHT_START = 6  # Before 6am
+    SOLAR_NIGHT_END = 20  # After 8pm
 
     APPLIANCE_ON_PROBABILITY = 0.3
     APPLIANCE_OFF_PROBABILITY = 0.2
     APPLIANCE_POWER_VARIANCE = 0.1
+
+    STORAGE_MIN_CHARGE_RATIO = 0.1  # 10% minimum charge
 
     @classmethod
     def calculate_solar_output(cls, device: Device, timestamp: datetime = None) -> float:
@@ -30,7 +35,7 @@ class TelemetryService:
 
         hour = timestamp.hour + timestamp.minute / 60.0
 
-        if hour < 6 or hour > 20:
+        if hour < cls.SOLAR_NIGHT_START or hour > cls.SOLAR_NIGHT_END:
             return 0.0
 
         rated_capacity = device.properties.get('rated_capacity_watts', 0)
@@ -38,7 +43,7 @@ class TelemetryService:
         exponent = -((hour - cls.SOLAR_PEAK_HOUR) ** 2) / (2 * cls.SOLAR_CURVE_WIDTH ** 2)
         base_output = rated_capacity * math.exp(exponent)
 
-        variation = random.uniform(-0.15, 0.15)
+        variation = random.uniform(-cls.SOLAR_VARIATION, cls.SOLAR_VARIATION)
         output = base_output * (1 + variation)
 
         return max(0, min(output, rated_capacity))
@@ -96,7 +101,7 @@ class TelemetryService:
             new_charge = min(new_charge, capacity)
         elif mode == DeviceMode.DISCHARGING:
             new_charge = current_charge - energy_delta
-            min_charge = capacity * 0.1
+            min_charge = capacity * cls.STORAGE_MIN_CHARGE_RATIO
             new_charge = max(new_charge, min_charge)
         else:
             new_charge = current_charge
@@ -111,7 +116,7 @@ class TelemetryService:
 
         if mode == DeviceMode.CHARGING and new_charge >= capacity:
             return True
-        if mode == DeviceMode.DISCHARGING and new_charge <= capacity * 0.1:
+        if mode == DeviceMode.DISCHARGING and new_charge <= capacity * cls.STORAGE_MIN_CHARGE_RATIO:
             return True
 
         return False

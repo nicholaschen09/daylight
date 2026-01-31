@@ -17,6 +17,10 @@ class DeviceService:
         DeviceType.APPLIANCE: ['average_power_draw_watts'],
     }
 
+    # Initial charge percentages for storage devices
+    INITIAL_BATTERY_CHARGE = 0.5  # 50%
+    INITIAL_EV_CHARGE = 0.8  # 80%
+
     @classmethod
     def validate_device_type(cls, device_type: str) -> None:
         """Validate that device_type is a valid DeviceType choice."""
@@ -54,7 +58,7 @@ class DeviceService:
         if device_type == DeviceType.BATTERY:
             capacity = properties.get('capacity_wh', 0)
             return {
-                'current_charge_wh': capacity * 0.5,
+                'current_charge_wh': capacity * cls.INITIAL_BATTERY_CHARGE,
                 'mode': DeviceMode.IDLE,
                 'current_rate_watts': 0
             }
@@ -62,7 +66,7 @@ class DeviceService:
         if device_type == DeviceType.ELECTRIC_VEHICLE:
             capacity = properties.get('battery_capacity_wh', 0)
             return {
-                'current_charge_wh': capacity * 0.8,
+                'current_charge_wh': capacity * cls.INITIAL_EV_CHARGE,
                 'mode': DeviceMode.IDLE,
                 'current_rate_watts': 0
             }
