@@ -1,6 +1,6 @@
 import graphene
 from graphene_django import DjangoObjectType
-from core.models import Device, DeviceType as DeviceTypeChoices, DeviceMode, TelemetryReading
+from core.models import Device, DeviceType, DeviceMode, TelemetryReading
 from core.services import DeviceService, EnergyService, DeviceValidationError
 
 
@@ -132,23 +132,26 @@ class RegisterDevice(graphene.Mutation):
             device_type = input.device_type
             properties_input = input.properties
 
-            if device_type == 'solar_panel' and properties_input.solar_panel:
+            # Convert enum to string for comparison
+            device_type_str = device_type if isinstance(device_type, str) else device_type.value
+
+            if device_type_str == DeviceType.SOLAR_PANEL and properties_input.solar_panel:
                 properties = {
                     'rated_capacity_watts': properties_input.solar_panel.rated_capacity_watts
                 }
-            elif device_type == 'battery' and properties_input.battery:
+            elif device_type_str == DeviceType.BATTERY and properties_input.battery:
                 properties = {
                     'capacity_wh': properties_input.battery.capacity_wh,
                     'max_charge_rate_watts': properties_input.battery.max_charge_rate_watts,
                     'max_discharge_rate_watts': properties_input.battery.max_discharge_rate_watts,
                 }
-            elif device_type == 'electric_vehicle' and properties_input.electric_vehicle:
+            elif device_type_str == DeviceType.ELECTRIC_VEHICLE and properties_input.electric_vehicle:
                 properties = {
                     'battery_capacity_wh': properties_input.electric_vehicle.battery_capacity_wh,
                     'max_charge_rate_watts': properties_input.electric_vehicle.max_charge_rate_watts,
                     'max_discharge_rate_watts': properties_input.electric_vehicle.max_discharge_rate_watts,
                 }
-            elif device_type == 'appliance' and properties_input.appliance:
+            elif device_type_str == DeviceType.APPLIANCE and properties_input.appliance:
                 properties = {
                     'average_power_draw_watts': properties_input.appliance.average_power_draw_watts
                 }
@@ -156,13 +159,13 @@ class RegisterDevice(graphene.Mutation):
                 return RegisterDevice(
                     device=None,
                     success=False,
-                    errors=[f"Properties required for device type: {device_type}"]
+                    errors=[f"Properties required for device type: {device_type_str}"]
                 )
 
             device = DeviceService.register_device(
                 name=input.name,
                 description=input.description or '',
-                device_type=device_type,
+                device_type=device_type_str,
                 properties=properties
             )
 
