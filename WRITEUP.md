@@ -69,6 +69,69 @@ when scaling, the main challenges are:
 
 the django orm made the queries clean, and postgresql's jsonfield handled the flexible device properties nicely. celery was straightforward to set up - just configure the beat schedule and the tasks run automatically.
 
+here are some example graphql queries that demonstrate the api:
+
+**list all devices:**
+```graphql
+query {
+  devices {
+    id
+    name
+    deviceType
+    currentPowerWatts
+    chargePercentage
+    isProducing
+    isConsuming
+    properties
+    currentState
+  }
+}
+```
+
+**energy summary:**
+```graphql
+query {
+  energySummary {
+    totalProductionWatts
+    totalConsumptionWatts
+    netPowerWatts
+    storageStates {
+      deviceName
+      deviceType
+      capacityWh
+      currentChargeWh
+      chargePercentage
+      mode
+    }
+  }
+}
+```
+
+**register a device:**
+```graphql
+mutation {
+  registerDevice(input: {
+    name: "Backyard Solar Array"
+    deviceType: SOLAR_PANEL
+    properties: {
+      solarPanel: {
+        ratedCapacityWatts: 4000
+      }
+    }
+  }) {
+    success
+    errors
+    device {
+      id
+      name
+      deviceType
+      properties
+      currentState
+    }
+  }
+}
+```
+
 ## tradeoffs & future work
 
 the main tradeoff i made was using the sti pattern instead of separate tables. it's less type-safe but more flexible, and the validation layer handles the constraints. for a production system, i might add database-level checks or use a hybrid approach.
