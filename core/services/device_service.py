@@ -1,4 +1,3 @@
-from typing import Any
 from django.db import transaction
 from core.models import Device, DeviceType, DeviceMode
 
@@ -19,8 +18,19 @@ class DeviceService:
     }
 
     @classmethod
+    def validate_device_type(cls, device_type: str) -> None:
+        """Validate that device_type is a valid DeviceType choice."""
+        valid_types = [choice[0] for choice in DeviceType.choices]
+        if device_type not in valid_types:
+            raise DeviceValidationError(
+                f"Invalid device_type: {device_type}. Must be one of: {valid_types}"
+            )
+
+    @classmethod
     def validate_properties(cls, device_type: str, properties: dict) -> None:
         """Validate that required properties are present for device type."""
+        cls.validate_device_type(device_type)
+        
         required = cls.REQUIRED_PROPERTIES.get(device_type, [])
         missing = [prop for prop in required if prop not in properties]
 
@@ -151,19 +161,30 @@ class DeviceService:
             rate_watts: Charge/discharge rate (uses max if not specified)
 
         Raises:
-            DeviceValidationError: If device is not a storage device
+            DeviceValidationError: If device is not a storage device or mode is invalid
         """
         if device.device_type not in [DeviceType.BATTERY, DeviceType.ELECTRIC_VEHICLE]:
             raise DeviceValidationError("Only storage devices have operating modes")
+
+        # Validate mode is a valid DeviceMode choice
+        valid_modes = [choice[0] for choice in DeviceMode.choices]
+        if mode not in valid_modes:
+            raise DeviceValidationError(
+                f"Invalid mode: {mode}. Must be one of: {valid_modes}"
+            )
 
         if mode == DeviceMode.CHARGING:
             max_rate = device.properties.get('max_charge_rate_watts', 0)
         elif mode == DeviceMode.DISCHARGING:
             max_rate = device.properties.get('max_discharge_rate_watts', 0)
-        else:
+        else:  # IDLE
             max_rate = 0
 
-        actual_rate = min(rate_watts, max_rate) if rate_watts else max_rate
+        # If rate_watts is provided, cap it at max_rate; otherwise use max_rate
+        if rate_watts is not None:
+            actual_rate = min(rate_watts, max_rate) if max_rate > 0 else 0
+        else:
+            actual_rate = max_rate
 
         device.current_state['mode'] = mode
         device.current_state['current_rate_watts'] = actual_rate if mode != DeviceMode.IDLE else 0
